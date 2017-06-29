@@ -18,6 +18,7 @@ Table of Contents
 * [Variables](#variables)
     * [$redis_key](#redis_key)
     * [$redis_db](#redis_db)
+    * [$redis_auth](#redis_auth)
 * [Installation](#installation)
 * [Compatibility](#compatibility)
 * [Modules that use this module for testing](#modules-that-use-this-module-for-testing)
@@ -84,7 +85,12 @@ The value of the [redis key](https://redis.io/topics/data-types-intro#redis-keys
 $redis_db
 -------------------
 
-The redis database number to use. This is input value for [SELECT](https://redis.io/commands/select).
+The redis database number to use. This is input value for [SELECT](https://redis.io/commands/select) command.
+
+$redis_auth
+-------------------
+
+The redis authentication to use. This is input value for [AUTH](https://redis.io/commands/select) command.
 
 [Back to TOC](#table-of-contents)
 
@@ -164,6 +170,11 @@ Available on github at [openresty/redis-nginx-module](https://github.com/openres
 
 Changes
 =======
+0.3.9 - 30 Jun 2017
+-------------------
+    *) Feature: it's now possible to use AUTH command with
+       $redis_auth variable.
+       Thanks to Wang Yongke (Yongke).
 
 0.3.8 - 21 Feb 2016
 -------------------

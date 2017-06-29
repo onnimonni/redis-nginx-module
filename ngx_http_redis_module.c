@@ -17,7 +17,10 @@ typedef struct {
     ngx_http_upstream_conf_t   upstream;
     ngx_int_t                  index;
     ngx_int_t                  db;
+    ngx_int_t                  auth;
     ngx_uint_t                 gzip_flag;
+
+    ngx_http_complex_value_t  *complex_target; /* for redis_pass */
 } ngx_http_redis_loc_conf_t;
 
 
@@ -44,6 +47,9 @@ static char *ngx_http_redis_merge_loc_conf(ngx_conf_t *cf,
 
 static char *ngx_http_redis_pass(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
+
+static ngx_http_upstream_srv_conf_t *ngx_http_redis_upstream_add(
+    ngx_http_request_t *r, ngx_url_t *url);
 
 static ngx_conf_bitmask_t  ngx_http_redis_next_upstream_masks[] = {
     { ngx_string("error"), NGX_HTTP_UPSTREAM_FT_ERROR },
@@ -154,9 +160,11 @@ static ngx_str_t  ngx_http_redis_hide_headers[] = {
     ngx_null_string
 };
 
-static ngx_str_t  ngx_http_redis_key = ngx_string("redis_key");
-static ngx_str_t  ngx_http_redis_db  = ngx_string("redis_db");
+static ngx_str_t  ngx_http_redis_key   = ngx_string("redis_key");
+static ngx_str_t  ngx_http_redis_db    = ngx_string("redis_db");
+static ngx_str_t  ngx_http_redis_auth  = ngx_string("redis_auth");
 static ngx_uint_t ngx_http_redis_db_index;
+static ngx_uint_t ngx_http_redis_auth_index;
 
 
 #define NGX_HTTP_REDIS_END   (sizeof(ngx_http_redis_end) - 1)
@@ -185,11 +193,44 @@ ngx_http_redis_handler(ngx_http_request_t *r)
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
+    rlcf = ngx_http_get_module_loc_conf(r, ngx_http_redis_module);
+    if (rlcf->complex_target) {
+        ngx_str_t           target;
+        ngx_url_t           url;
+
+        /* variables used in the redis_pass directive */
+
+        if (ngx_http_complex_value(r, rlcf->complex_target, &target)
+                != NGX_OK)
+        {
+            return NGX_ERROR;
+        }
+
+        if (target.len == 0) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                    "handler: empty \"redis_pass\" target");
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        url.host = target;
+        url.port = 0;
+        url.default_port = 6379;
+        url.no_resolve = 1;
+
+        rlcf->upstream.upstream = ngx_http_redis_upstream_add(r, &url);
+
+        if (rlcf->upstream.upstream == NULL) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                   "redis: upstream \"%V\" not found", &target);
+
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
+    }
+
+
 #if defined nginx_version && nginx_version >= 8011
     if (ngx_http_upstream_create(r) != NGX_OK) {
 #else
-    rlcf = ngx_http_get_module_loc_conf(r, ngx_http_redis_module);
-
     u = ngx_pcalloc(r->pool, sizeof(ngx_http_upstream_t));
     if (u == NULL) {
 #endif
@@ -214,9 +255,7 @@ ngx_http_redis_handler(ngx_http_request_t *r)
     u->peer.log_error = NGX_ERROR_ERR;
 #endif
 
-#if defined nginx_version && nginx_version >= 8011
-    rlcf = ngx_http_get_module_loc_conf(r, ngx_http_redis_module);
-#else
+if !defined(nginx_version) || nginx_version < 8011
     u->output.tag = (ngx_buf_tag_t) &ngx_http_redis_module;
 #endif
 
@@ -259,17 +298,28 @@ ngx_http_redis_handler(ngx_http_request_t *r)
 static ngx_int_t
 ngx_http_redis_create_request(ngx_http_request_t *r)
 {
-    size_t                          len;
+    size_t                          len = 0;
     uintptr_t                       escape;
     ngx_buf_t                      *b;
     ngx_chain_t                    *cl;
     ngx_http_redis_ctx_t           *ctx;
-    ngx_http_variable_value_t      *vv[2];
+    ngx_http_variable_value_t      *vv[3];
     ngx_http_redis_loc_conf_t      *rlcf;
 
     rlcf = ngx_http_get_module_loc_conf(r, ngx_http_redis_module);
 
-    vv[0] = ngx_http_get_indexed_variable(r, ngx_http_redis_db_index);
+    vv[0] = ngx_http_get_indexed_variable(r, ngx_http_redis_auth_index);
+    if (vv[0] == NULL || vv[0]->not_found || vv[0]->len == 0) {
+        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "no auth command provided" );
+    } else {
+        len += sizeof("auth ") - 1 + vv[0]->len;
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "auth info: %s", vv[0]->data);
+    }
+    len += sizeof(CRLF) - 1;
+
+    vv[1] = ngx_http_get_indexed_variable(r, ngx_http_redis_db_index);
 
     /*
      * If user do not select redis database in nginx.conf by redis_db
@@ -277,30 +327,30 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
      * some overhead in talk with redis, but this way simplify parsing
      * the redis answer in ngx_http_redis_process_header().
      */
-    if (vv[0] == NULL || vv[0]->not_found || vv[0]->len == 0) {
+    if (vv[1] == NULL || vv[1]->not_found || vv[1]->len == 0) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "select 0 redis database" );
-        len = sizeof("select 0") - 1;
+        len += sizeof("select 0") - 1;
     } else {
-        len = sizeof("select ") - 1 + vv[0]->len;
+        len += sizeof("select ") - 1 + vv[1]->len;
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "select %s redis database", vv[0]->data);
+                       "select %s redis database", vv[1]->data);
     }
     len += sizeof(CRLF) - 1;
 
-    vv[1] = ngx_http_get_indexed_variable(r, rlcf->index);
+    vv[2] = ngx_http_get_indexed_variable(r, rlcf->index);
 
     /* If nginx.conf have no redis_key return error. */
-    if (vv[1] == NULL || vv[1]->not_found || vv[1]->len == 0) {
+    if (vv[2] == NULL || vv[2]->not_found || vv[2]->len == 0) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "the \"$redis_key\" variable is not set");
         return NGX_ERROR;
     }
 
     /* Count have space required escape symbols. */
-    escape = 2 * ngx_escape_uri(NULL, vv[1]->data, vv[1]->len, NGX_ESCAPE_REDIS);
+    escape = 2 * ngx_escape_uri(NULL, vv[2]->data, vv[2]->len, NGX_ESCAPE_REDIS);
 
-    len += sizeof("get ") - 1 + vv[1]->len + escape + sizeof(CRLF) - 1;
+    len += sizeof("get ") - 1 + vv[2]->len + escape + sizeof(CRLF) - 1;
 
     /* Create temporary buffer for request with size len. */
     b = ngx_create_temp_buf(r->pool, len);
@@ -318,6 +368,16 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
 
     r->upstream->request_bufs = cl;
 
+    /* add "auth " for request */
+    if (vv[0] != NULL && !(vv[0]->not_found) && vv[0]->len != 0) {
+        /* Add "auth " for request. */
+        *b->last++ = 'a'; *b->last++ = 'u'; *b->last++ = 't'; *b->last++ = 'h';
+        *b->last++ = ' ';
+        b->last = ngx_copy(b->last, vv[0]->data, vv[0]->len);
+        /* Add "\r\n". */
+        *b->last++ = CR; *b->last++ = LF;
+    }
+
     /* Add "select " for request. */
     *b->last++ = 's'; *b->last++ = 'e'; *b->last++ = 'l'; *b->last++ = 'e';
     *b->last++ = 'c'; *b->last++ = 't'; *b->last++ = ' ';
@@ -331,12 +391,12 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
      * Add "0" as redis number db to request if redis_db undefined,
      * othervise add real number from context.
      */
-    if (vv[0] == NULL || vv[0]->not_found || vv[0]->len == 0) {
+    if (vv[1] == NULL || vv[1]->not_found || vv[1]->len == 0) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "select 0 redis database" );
         *b->last++ = '0';
     } else {
-        b->last = ngx_copy(b->last, vv[0]->data, vv[0]->len);
+        b->last = ngx_copy(b->last, vv[1]->data, vv[1]->len);
         ctx->key.len = b->last - ctx->key.data;
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "select %V redis database", &ctx->key);
@@ -360,10 +420,10 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
      */
 
     if (escape == 0) {
-        b->last = ngx_copy(b->last, vv[1]->data, vv[1]->len);
+        b->last = ngx_copy(b->last, vv[2]->data, vv[2]->len);
 
     } else {
-        b->last = (u_char *) ngx_escape_uri(b->last, vv[1]->data, vv[1]->len,
+        b->last = (u_char *) ngx_escape_uri(b->last, vv[2]->data, vv[2]->len,
                                             NGX_ESCAPE_REDIS);
     }
 
@@ -377,8 +437,8 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
 
     /*
      * Summary, the request looks like this:
-     * "select $redis_db\r\nget $redis_key\r\n", where
-     * $redis_db and $redis_key are variable's values.
+     * "auth $redis_auth\r\nselect $redis_db\r\nget $redis_key\r\n", where
+     * $redis_auth, $redis_db and $redis_key are variable's values.
      */
 
     return NGX_OK;
@@ -402,6 +462,7 @@ ngx_http_redis_process_header(ngx_http_request_t *r)
     ngx_http_upstream_t       *u;
     ngx_http_redis_ctx_t      *ctx;
     ngx_http_redis_loc_conf_t *rlcf;
+    ngx_http_variable_value_t *vv;
 
     c = try = 0;
 
@@ -411,10 +472,11 @@ ngx_http_redis_process_header(ngx_http_request_t *r)
 
     /*
      * Good answer from redis should looks like this:
-     * "+OK\r\n$8\r\n12345678\r\n"
+     * "+OK\r\n+OK\r\n$8\r\n12345678\r\n"
      *
      * Here is:
-     * "+OK" is answer for first command "select 0".
+     * "+OK\r\n+OK\r\n" is answer for first two commands
+     * "auth password" and "select 0".
      * Next two strings are answer for command "get $redis_key", where
      *
      * "$8" is length of following next string and
@@ -423,10 +485,10 @@ ngx_http_redis_process_header(ngx_http_request_t *r)
      * So, if the first symbol is:
      * "+" (good answer) - try to find 2 strings;
      * "-" (bad answer) - try to find 1 string;
-     * othervise answer is invalid. 
+     * othervise answer is invalid.
      */
     if (*p == '+') {
-        try = 2;
+        try = 3;
     } else if (*p == '-') {
         try = 1;
     } else {
@@ -461,16 +523,15 @@ found:
     rlcf = ngx_http_get_module_loc_conf(r, ngx_http_redis_module);
 
     /* Compare pointer and error message, if yes set 502 and return */
-    if (ngx_strncmp(p, "-ERR", sizeof("-ERR") - 1) == 0) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "redis sent error in response \"%V\" "
-                      "for key \"%V\"",
-                      &line, &ctx->key);
-
-        u->headers_in.status_n = 502;
-        u->state->status = 502;
-
-        return NGX_OK;
+    vv = ngx_http_get_indexed_variable(r, ngx_http_redis_auth_index);
+    if (vv == NULL || vv->not_found || vv->len == 0) {
+        if (ngx_strncmp(p, "+OK\r\n", sizeof("+OK\r\n") - 1) == 0) {
+            p += sizeof("+OK\r\n") - 1;
+        }
+    } else {
+        if (ngx_strncmp(p, "+OK\r\n+OK\r\n", sizeof("+OK\r\n+OK\r\n") - 1) == 0) {
+            p += sizeof("+OK\r\n+OK\r\n") - 1;
+        }
     }
 
     /* Compare pointer and good message, if yes move on the pointer */
@@ -847,7 +908,10 @@ ngx_http_redis_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     ngx_str_t                 *value;
     ngx_url_t                  u;
+    ngx_uint_t                 n;
     ngx_http_core_loc_conf_t  *clcf;
+
+    ngx_http_compile_complex_value_t         ccv;
 
     if (rlcf->upstream.upstream) {
         return "is duplicate";
@@ -881,6 +945,44 @@ ngx_http_redis_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     rlcf->db = ngx_http_get_variable_index(cf, &ngx_http_redis_db);
 
+    rlcf->auth = ngx_http_get_variable_index(cf, &ngx_http_redis_auth);
+
+    value = cf->args->elts;
+
+    n = ngx_http_script_variables_count(&value[1]);
+    if (n) {
+        rlcf->complex_target = ngx_palloc(cf->pool,
+                                          sizeof(ngx_http_complex_value_t));
+
+        if (rlcf->complex_target == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
+        ccv.cf = cf;
+        ccv.value = &value[1];
+        ccv.complex_value = rlcf->complex_target;
+
+        if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
+            return NGX_CONF_ERROR;
+        }
+
+        return NGX_CONF_OK;
+    }
+
+    rlcf->complex_target = NULL;
+
+    ngx_memzero(&u, sizeof(ngx_url_t));
+
+    u.url = value[1];
+    u.no_resolve = 1;
+
+    rlcf->upstream.upstream = ngx_http_upstream_add(cf, &u, 0);
+    if (rlcf->upstream.upstream == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+
     return NGX_CONF_OK;
 }
 
@@ -900,6 +1002,7 @@ ngx_http_redis_add_variables(ngx_conf_t *cf)
 {
     ngx_int_t             n;
     ngx_http_variable_t  *var;
+    ngx_http_variable_t  *authvar;
 
     var = ngx_http_add_variable(cf, &ngx_http_redis_db,
                                 NGX_HTTP_VAR_CHANGEABLE);
@@ -907,7 +1010,15 @@ ngx_http_redis_add_variables(ngx_conf_t *cf)
         return NGX_ERROR;
     }
 
+    authvar = ngx_http_add_variable(cf, &ngx_http_redis_auth,
+                                NGX_HTTP_VAR_CHANGEABLE);
+    if (authvar == NULL) {
+        return NGX_ERROR;
+    }
+
+
     var->get_handler = ngx_http_redis_reset_variable;
+    authvar->get_handler = ngx_http_redis_reset_variable;
 
     n = ngx_http_get_variable_index(cf, &ngx_http_redis_db);
     if (n == NGX_ERROR) {
@@ -916,5 +1027,49 @@ ngx_http_redis_add_variables(ngx_conf_t *cf)
 
     ngx_http_redis_db_index = n;
 
+    n = ngx_http_get_variable_index(cf, &ngx_http_redis_auth);
+    if (n == NGX_ERROR) {
+        return NGX_ERROR;
+    }
+
+    ngx_http_redis_auth_index = n;
+
     return NGX_OK;
+}
+
+static ngx_http_upstream_srv_conf_t *
+ngx_http_redis_upstream_add(ngx_http_request_t *r, ngx_url_t *url)
+{
+    ngx_http_upstream_main_conf_t  *umcf;
+    ngx_http_upstream_srv_conf_t  **uscfp;
+    ngx_uint_t                      i;
+
+    umcf = ngx_http_get_module_main_conf(r, ngx_http_upstream_module);
+
+    uscfp = umcf->upstreams.elts;
+
+    for (i = 0; i < umcf->upstreams.nelts; i++) {
+
+        if (uscfp[i]->host.len != url->host.len
+            || ngx_strncasecmp(uscfp[i]->host.data, url->host.data,
+               url->host.len) != 0)
+        {
+            continue;
+        }
+
+        if (uscfp[i]->port != url->port) {
+            continue;
+        }
+
+        if (uscfp[i]->default_port
+            && url->default_port
+            && uscfp[i]->default_port != url->default_port)
+        {
+            continue;
+        }
+
+        return uscfp[i];
+    }
+
+    return NULL;
 }
