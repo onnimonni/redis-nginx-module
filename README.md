@@ -42,7 +42,7 @@ This module is production ready.
 Version
 =======
 
-This document describes redis_pass [v0.60](https://github.com/openresty/redis-nginx-module/tags).
+This document describes redis_pass [v0.3.9](https://github.com/openresty/redis-nginx-module/tags).
 
 Synopsis
 ========
