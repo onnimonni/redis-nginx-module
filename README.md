@@ -335,7 +335,7 @@ Test Suite
 ==========
 
 This module comes with a Perl-driven test suite. The [test cases](https://github.com/openresty/redis-nginx-module/tree/master/t/) are
-[declarative](https://github.com/openresty/redis-nginx-module/blob/master/t/echo.t) too. Thanks to the [Test::Nginx](http://search.cpan.org/perldoc?Test::Nginx) module in the Perl world.
+[declarative](https://github.com/openresty/redis-nginx-module/blob/master/t/redis.t) too. Thanks to the [Test::Nginx](http://search.cpan.org/perldoc?Test::Nginx) module in the Perl world.
 
 To run it on your side:
 
@@ -343,6 +343,13 @@ To run it on your side:
 
  $ PATH=/path/to/your/nginx-with-echo-module:$PATH prove -r t
 ```
+
+You can also use the provided Dockerfile to run tests in a docker container:
+```
+$ docker build -f test-environment.Dockerfile
+```bash
+
+**Note:** The first installation takes quite some time (5-10min).
 
 You need to terminate any Nginx processes before running the test suite if you have changed the Nginx server binary.
 
