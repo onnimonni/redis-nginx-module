@@ -255,7 +255,7 @@ ngx_http_redis_handler(ngx_http_request_t *r)
     u->peer.log_error = NGX_ERROR_ERR;
 #endif
 
-if !defined(nginx_version) || nginx_version < 8011
+#if !defined(nginx_version) || nginx_version < 8011
     u->output.tag = (ngx_buf_tag_t) &ngx_http_redis_module;
 #endif
 
