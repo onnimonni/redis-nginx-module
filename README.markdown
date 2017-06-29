@@ -13,15 +13,13 @@ Table of Contents
 * [Version](#version)
 * [Synopsis](#synopsis)
 * [Description](#description)
-* [Redis Handler Directives](#content-handler-directives)
+* [Directives](#directives)
     * [redis_pass](#redis_pass)
 * [Variables](#variables)
     * [$redis_key](#redis_key)
     * [$redis_db](#redis_db)
     * [$redis_auth](#redis_auth)
 * [Installation](#installation)
-* [Compatibility](#compatibility)
-* [Modules that use this module for testing](#modules-that-use-this-module-for-testing)
 * [Community](#community)
     * [English Mailing List](#english-mailing-list)
     * [Chinese Mailing List](#chinese-mailing-list)
@@ -95,20 +93,32 @@ This is fork of the [ngx_http_redis module by Sergey A. Osokin](https://www.ngin
 
 [Back to TOC](#table-of-contents)
 
-Content Handler Directives
+Directives
 ==========================
+
+redis_pass
+-----------
+**syntax:** *redis_pass &lt;upstream_name&gt;*
+
+**syntax:** *redis_pass &lt;host&gt;:&lt;port&gt;*
+
+**default:** *no*
+
+**context:** *location, location if*
+
+**phase:** *content*
+
+Specify the Redis server backend. 
+
+[Back to TOC](#table-of-contents)
 
 Variables
 =========
-
-[Back to TOC](#table-of-contents)
 
 $redis_key
 --------
 
 The value of the [redis key](https://redis.io/topics/data-types-intro#redis-keys).
-
-[Back to TOC](#table-of-contents)
 
 $redis_db
 -------------------
@@ -153,7 +163,7 @@ Starting from NGINX 1.9.11, you can also compile this module as a dynamic module
 directive, for example,
 
 ```nginx
-load_module /path/to/modules/ngx_http_echo_module.so;
+load_module /path/to/modules/ngx_http_redis_module.so;
 ```
 
 Also, this module is included and enabled by default in the [OpenResty bundle](http://openresty.org).
@@ -345,17 +355,12 @@ To run it on your side:
 ```
 
 You can also use the provided Dockerfile to run tests in a docker container:
-```
-$ docker build -f test-environment.Dockerfile
+
 ```bash
+$ docker build -f test-environment.Dockerfile
+```
 
 **Note:** The first installation takes quite some time (5-10min).
-
-You need to terminate any Nginx processes before running the test suite if you have changed the Nginx server binary.
-
-Because a single nginx server (by default, `localhost:1984`) is used across all the test scripts (`.t` files), it's meaningless to run the test suite in parallel by specifying `-jN` when invoking the `prove` utility.
-
-Some parts of the test suite requires standard modules [proxy](http://nginx.org/en/docs/http/ngx_http_proxy_module.html), [rewrite](http://nginx.org/en/docs/http/ngx_http_rewrite_module.html) and [SSI](http://nginx.org/en/docs/http/ngx_http_ssi_module.html) to be enabled as well when building Nginx.
 
 [Back to TOC](#table-of-contents)
 
@@ -421,7 +426,6 @@ Copyright & License
     OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
     SUCH DAMAGE.
  
-
 [Back to TOC](#table-of-contents)
 
 See Also
