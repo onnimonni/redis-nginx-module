@@ -15,11 +15,14 @@ RUN \
         readline-dev \
         zlib-dev \
 
-    # Install nginx testing util: http://search.cpan.org/perldoc?Test::Nginx
-    && cpan install Test::Nginx \
+    # Agree to the stuff that cpan is asking for
+    && echo "\n" | cpan \
 
-    # Install Redis library for perl
-    && cpan install Redis 
+    # Install nginx testing util: http://search.cpan.org/perldoc?Test::Nginx
+    && cpan install Redis \
+    && cpan install local::lib \
+    && cpan install Test::Nginx
+
 
 # Copy files to docker
 ADD . /build
