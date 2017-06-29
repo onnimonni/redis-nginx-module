@@ -54,6 +54,34 @@ Synopsis
     }
 ```
 
+```nginx
+    location / {
+      set $redis_key  "$uri?$args";
+      set $redis_db   "3";
+      set $redis_auth "password";
+      redis_pass      127.0.0.1:6379;
+    }
+```
+
+```nginx
+http
+{
+ ...
+    upstream redis {
+        server  127.0.0.1:6379;
+    }
+
+    server {
+     ...
+        location / {
+            set $redis_key  "$uri?$args"
+            proxy_pass redis;
+        }
+        ...
+     }
+}
+```
+
 [Back to TOC](#table-of-contents)
 
 Description
