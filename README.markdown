@@ -5,6 +5,8 @@ Name
 
 *This module is not distributed with the Nginx source.* See [the installation instructions](#installation).
 
+[![Build Status](https://travis-ci.org/onnimonni/redis-nginx-module.svg?branch=master)](https://travis-ci.org/onnimonni/redis-nginx-module)
+
 Table of Contents
 =================
 
