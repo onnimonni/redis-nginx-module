@@ -47,7 +47,7 @@ before_install:
   # Cached image depends on the distro only, the first layers of distro can be shared between builds
   - export CACHED_DOCKER_IMAGE_FILE=$CACHE_DIR/docker-image-$BUILD_DISTRO.tar.gz
 
-  - if [ -f ${$CACHED_DOCKER_IMAGE_FILE} ]; then gunzip -c ${$CACHED_DOCKER_IMAGE_FILE} | docker load; fi
+  - if [ -f ${CACHED_DOCKER_IMAGE_FILE} ]; then gunzip -c ${CACHED_DOCKER_IMAGE_FILE} | docker load; fi
 
 script:
   # 1. Installs all dependencies in a alpine/debian container
