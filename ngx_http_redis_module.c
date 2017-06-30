@@ -1062,13 +1062,15 @@ ngx_http_redis_upstream_add(ngx_http_request_t *r, ngx_url_t *url)
             continue;
         }
 
+#if (nginx_version < 1011006)
         if (uscfp[i]->default_port
             && url->default_port
             && uscfp[i]->default_port != url->default_port)
         {
             continue;
         }
-
+#endif
+        
         return uscfp[i];
     }
 
