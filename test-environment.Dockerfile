@@ -14,32 +14,35 @@ RUN \
         perl-dev \
         readline-dev \
         zlib-dev \
-        pcre-dev \
+        pcre-dev 
 
-    # Agree to the stuff that cpan is asking for
-    && echo "\n" | cpan \
-    && cpan install App::cpanminus
+RUN \
+    # Agree to the stuff that cpan is asking in initial install
+    echo "\n" | cpan \
+
+    # Install needed perl modules 
+    && cpan install Redis local::lib Test::More
 
 # Version for which to test against
 ENV NGINX_VERSION 1.11.2
 
-# Copy files to docker
-ADD . /build
-
-# Run the tests
+# Install nginx
 RUN \
-	cd /build \
-
-	# Install test dependencies
-	&& cpanm --installdeps ./t/ \
+	mkdir -p /build \
+	&& cd /build \
 
 	# Download  nginx
-    && wget 'http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz' \
+	&& echo wget "http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz" \
+    && wget "http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz" \
     && tar -xzvf nginx-$NGINX_VERSION.tar.gz \
     && mv nginx-$NGINX_VERSION nginx \
+    && rm nginx-$NGINX_VERSION.tar.gz
+
+# Copy module files to build directory
+ADD . /build/
 
     # Build nginx
-    && cd nginx \
+RUN cd /build/nginx \
     && ./configure --prefix=/etc/nginx --add-module=/build/ \
     && make -j2 \
     && make install \
