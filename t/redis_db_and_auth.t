@@ -51,21 +51,21 @@ http {
 
         location / {
             set $redis_key $uri;
-            set $redis_auth "secure_password"
+            set $redis_auth "secure_password";
             redis_pass redisbackend;
         }
 
         location /0 {
             set $redis_key $uri;
             set $redis_db  "0";
-            set $redis_auth "secure_password"
+            set $redis_auth "secure_password";
             redis_pass redisbackend;
         }
 
         location /1 {
             set $redis_key $uri;
             set $redis_db  "1";
-            set $redis_auth "secure_password"
+            set $redis_auth "secure_password";
             redis_pass redisbackend;
         }
     }
@@ -105,6 +105,8 @@ $t->waitforsocket('127.0.0.1:8081')
 ###############################################################################
 
 my $r = Redis->new(server => '127.0.0.1:8081');
+$r->auth('secure_password');
+
 $r->set('/' => 'SEE-THIS') or die "can't put value into redis: $!";
 $r->set('/0/' => 'SEE-THIS.0') or die "can't put value into redis: $!";
 

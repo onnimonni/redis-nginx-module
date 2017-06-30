@@ -14,15 +14,14 @@ RUN \
         perl-dev \
         readline-dev \
         zlib-dev \
+        pcre-dev \
 
     # Agree to the stuff that cpan is asking for
     && echo "\n" | cpan \
+    && cpan install App::cpanminus
 
-    # Install nginx testing util: http://search.cpan.org/perldoc?Test::Nginx
-    && cpan install Redis \
-    && cpan install local::lib \
-    && cpan install Test::Nginx
-
+# Version for which to test against
+ENV NGINX_VERSION 1.11.2
 
 # Copy files to docker
 ADD . /build
@@ -31,4 +30,23 @@ ADD . /build
 RUN \
 	cd /build \
 
+	# Install test dependencies
+	&& cpanm --installdeps ./t/ \
+
+	# Download  nginx
+    && wget 'http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz' \
+    && tar -xzvf nginx-$NGINX_VERSION.tar.gz \
+    && mv nginx-$NGINX_VERSION nginx \
+
+    # Build nginx
+    && cd nginx \
+    && ./configure --prefix=/etc/nginx --add-module=/build/ \
+    && make -j2 \
+    && make install \
+    && cd .. \
+
+    # Create the dir for logs
+    && mkdir -p /etc/nginx/logs \
+
+	# Run tests
 	&& prove -r t

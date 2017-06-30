@@ -357,7 +357,7 @@ To run it on your side:
 You can also use the provided Dockerfile to run tests in a docker container:
 
 ```bash
-$ docker build -f test-environment.Dockerfile
+$ docker build -f test-environment.Dockerfile -t openresty/redis-nginx-module-test .
 ```
 
 **Note:** The first installation takes quite some time (5-10min).

@@ -91,6 +91,8 @@ $t->waitforsocket('127.0.0.1:8081')
 ###############################################################################
 
 my $r = Redis->new(server => '127.0.0.1:8081');
+$r->auth('secure_password');
+
 $r->set('/' => 'SEE-THIS') or die "can't put value into redis: $!";
 
 like(http_get('/'), qr/SEE-THIS/, 'redis request /');
