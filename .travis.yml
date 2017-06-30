@@ -29,6 +29,9 @@ install:
   - tar zxf download-cache/nginx-$NGINX_VERSION.tar.gz
   - mv nginx-$NGINX_VERSION nginx
   
+  # Agree to the stuff that cpan is asking in it's initial install
+  - echo "\n" | cpan
+
   # Install needed perl modules
   - cpan install Redis local::lib Test::More
   
