@@ -1,8 +1,15 @@
 # Use container based faster infra
 sudo: false
 
-# Perl is the main language for the tests
-language: perl
+language: c
+
+compiler:
+  - gcc
+  - clang
+
+cache:
+  directories:
+  - download-cache
 
 # Test with multiple Nginx versions
 # Source: http://nginx.org/en/download.html
@@ -12,15 +19,18 @@ env:
   - NGINX_VERSION=1.12.0 
   - NGINX_VERSION=1.10.3
 
-before_script:
-  # Install needed perl libraries
-  - cpan install Redis local::lib Test::More
+install:
+  # Use cache folder
+  - if [ ! -d download-cache ]; then mkdir download-cache; fi
 
   # Install nginx
-  - wget "http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz"
-  - tar -xzvf nginx-$NGINX_VERSION.tar.gz
+  - if [ ! -f download-cache/nginx-$NGINX_VERSION.tar.gz ]; then wget -O download-cache/nginx-$NGINX_VERSION.tar.gz http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz; fi
+
+  - tar zxf download-cache/nginx-$NGINX_VERSION.tar.gz
   - mv nginx-$NGINX_VERSION nginx
-  - rm nginx-$NGINX_VERSION.tar.gz
+  
+  # Install needed perl modules
+  - cpan install Redis local::lib Test::More
   
   # Build nginx with this module
   - cd nginx
@@ -32,7 +42,7 @@ before_script:
     # Build Nginx
   - make -j${NPROC}
   - make -j${NPROC} install
-  
+
   - cd ..
 
 script:

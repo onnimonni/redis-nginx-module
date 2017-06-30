@@ -1,4 +1,0 @@
-requires 'Redis';
-requires 'Test::More';
-requires 'local::lib';
-
