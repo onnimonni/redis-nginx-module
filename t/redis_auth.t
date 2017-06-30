@@ -28,7 +28,7 @@ plan(skip_all => 'Redis not installed') if $@;
 
 
 my $t = Test::Nginx->new()->has(qw/http redis/)
-	->has_daemon('redis-server')->plan(6)
+	->has_daemon('redis-server')->plan(2)
 	->write_file_expand('nginx.conf', <<'EOF');
 
 %%TEST_GLOBALS%%

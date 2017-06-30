@@ -34,8 +34,6 @@ my $t = Test::Nginx->new()->has(qw/http redis/)
 
 daemon         off;
 
-error_log /opt/nginx/logs/error.log debug;
-
 events {
 }
 
