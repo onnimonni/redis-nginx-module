@@ -6,10 +6,19 @@ language: c
 services:
   - docker
 
-# Test with multiple Nginx versions
-# Source: http://nginx.org/en/download.html
+cache:
+  directories:
+  - $CACHE_DIR
+
 env:
+  global:
+    # Cache docker images for faster and more stabler builds
+    - CACHE_DIR=$HOME/.cache/docker
+
   matrix:
+    # Test with multiple Nginx versions
+    # Source: http://nginx.org/en/download.html
+
     # Alpine uses musl c library
     - NGINX_VERSION=1.9.15  BUILD_DISTRO=alpine COMPILER=gcc
     - NGINX_VERSION=1.10.3  BUILD_DISTRO=alpine COMPILER=gcc
@@ -31,8 +40,20 @@ env:
     - NGINX_VERSION=1.12.0  BUILD_DISTRO=debian COMPILER=clang
     - NGINX_VERSION=1.13.2  BUILD_DISTRO=debian COMPILER=clang
 
+before_install:
+  # Create cache dir in the first build
+  - if [ ! -d $CACHE_DIR ]; then mkdir $CACHE_DIR; fi
+  
+  # Cached image depends on the distro only, the first layers of distro can be shared between builds
+  - export CACHED_DOCKER_IMAGE_FILE=$CACHE_DIR/docker-image-$BUILD_DISTRO.tar.gz
+
+  - if [ -f ${$CACHED_DOCKER_IMAGE_FILE} ]; then gunzip -c ${$CACHED_DOCKER_IMAGE_FILE} | docker load; fi
+
 script:
   # 1. Installs all dependencies in a alpine/debian container
   # 2. Builds nginx
   # 3. Runs the provided tests
-  - docker build -t ngx-redis-test:$BUILD_DISTRO-$NGINX_VERSION-$COMPILER -f t/misc/test-$BUILD_DISTRO.Dockerfile --build-arg NGINX_VERSION=$NGINX_VERSION --build-arg CC=$COMPILER .
+  - docker build -t ngx-redis-test:$BUILD_DISTRO -f t/misc/test-$BUILD_DISTRO.Dockerfile --build-arg NGINX_VERSION=$NGINX_VERSION --build-arg CC=$COMPILER .
+
+after_script:
+  - if [ ! -f ${CACHED_DOCKER_IMAGE_FILE} ]; then docker save ngx-redis-test:$BUILD_DISTRO | gzip > ${CACHED_DOCKER_IMAGE_FILE}; fi
