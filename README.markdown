@@ -351,7 +351,7 @@ To run it on your side:
 
 ```bash
 
- $ PATH=/path/to/your/nginx-with-echo-module:$PATH prove -r t
+ $ PATH=/path/to/your/compiled-nginx-with-redis-module:$PATH prove -r t
 ```
 
 You can also use the provided Dockerfile to run tests in a docker container:
