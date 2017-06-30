@@ -1,15 +1,8 @@
 # Use container based faster infra
-sudo: false
+sudo: required
 
-language: c
-
-compiler:
-  - gcc
-  - clang
-
-cache:
-  directories:
-  - download-cache
+services:
+  - docker
 
 # Test with multiple Nginx versions
 # Source: http://nginx.org/en/download.html
@@ -19,36 +12,6 @@ env:
   - NGINX_VERSION=1.12.0 
   - NGINX_VERSION=1.10.3
 
-install:
-  # Use cache folder
-  - if [ ! -d download-cache ]; then mkdir download-cache; fi
-
-  # Install nginx
-  - if [ ! -f download-cache/nginx-$NGINX_VERSION.tar.gz ]; then wget -O download-cache/nginx-$NGINX_VERSION.tar.gz http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz; fi
-
-  - tar zxf download-cache/nginx-$NGINX_VERSION.tar.gz
-  - mv nginx-$NGINX_VERSION nginx
-  
-  # Agree to the stuff that cpan is asking in initial install
-  - echo "\n" | cpan
-
-  # Install needed perl modules without testing them
-  - cpan install -T Redis local::lib Test::More
-  
-  # Build nginx with this module
-  - cd nginx
-  - ./configure --prefix=/etc/nginx --add-module=$(realpath ..)
-
-  # Use all cores available in the builds with -j${NPROC} flag
-  - readonly NPROC=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || 1)  && \
-    
-    # Build Nginx
-  - make -j${NPROC}
-  - make -j${NPROC} install
-
-  - cd ..
-
 script:
-
-  # Run tests
-  - prove -r t
+  # Installs all dependencies in a alpine linux container and runs the tests
+  - docker build -f test-environment.Dockerfile --build-arg NGINX_VERSION=$NGINX_VERSION .

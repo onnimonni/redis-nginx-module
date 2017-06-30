@@ -1,4 +1,8 @@
 FROM alpine:3.5
+
+# Version for which to test against
+ARG NGINX_VERSION 1.11.2
+
 RUN \
 	# Install redis and buildtools
 	apk add --update \
@@ -22,9 +26,6 @@ RUN \
 
     # Install needed perl modules 
     && cpan install Redis local::lib Test::More
-
-# Version for which to test against
-ENV NGINX_VERSION 1.11.2
 
 # Install nginx
 RUN \
