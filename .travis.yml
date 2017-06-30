@@ -1,5 +1,6 @@
 # Use container based faster infra
-sudo: false
+sudo: required
+dist: trusty
 
 language: c
 
@@ -15,9 +16,8 @@ cache:
 # Source: http://nginx.org/en/download.html
 env:
   - NGINX_VERSION=1.13.2
-  - NGINX_VERSION=1.13.0
-  - NGINX_VERSION=1.12.0 
-  - NGINX_VERSION=1.10.3
+  - NGINX_VERSION=1.12.0
+  - NGINX_VERSION=1.9.15
 
 install:
   # Use cache folder
@@ -29,11 +29,11 @@ install:
   - tar zxf download-cache/nginx-$NGINX_VERSION.tar.gz
   - mv nginx-$NGINX_VERSION nginx
   
-  # Agree to the stuff that cpan is asking in it's initial install
-  - echo "\n" | cpan
+  # Install cpanm
+  - sudo apt-get install -qq -y cpanminus axel
 
   # Install needed perl modules
-  - cpan install Redis local::lib Test::More
+  - sudo cpanm --quiet --installdeps --notest ./t/ > build.log 2>&1 || (cat build.log && exit 1)
   
   # Build nginx with this module
   - cd nginx
