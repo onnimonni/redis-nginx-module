@@ -1,4 +1,4 @@
-# Use container based faster infra
+# Use docker to run the tests
 sudo: required
 
 services:
@@ -7,11 +7,19 @@ services:
 # Test with multiple Nginx versions
 # Source: http://nginx.org/en/download.html
 env:
-  - NGINX_VERSION=1.13.2
-  - NGINX_VERSION=1.13.0
-  - NGINX_VERSION=1.12.0 
-  - NGINX_VERSION=1.10.3
+  matrix:
+    # Alpine uses musl c library
+    - NGINX_VERSION=1.9.15 BUILD_DISTRO=alpine COMPILER=gcc
+    - NGINX_VERSION=1.11.2 BUILD_DISTRO=alpine COMPILER=gcc
+
+    # Debian uses glibc c library run with GNU C compiler
+    - NGINX_VERSION=1.9.15 BUILD_DISTRO=debian COMPILER=gcc
+    - NGINX_VERSION=1.11.2 BUILD_DISTRO=debian COMPILER=gcc
+    
+    # Run also with clang compiler
+    - NGINX_VERSION=1.9.15 BUILD_DISTRO=debian COMPILER=clang
+    - NGINX_VERSION=1.11.2 BUILD_DISTRO=debian COMPILER=clang
 
 script:
   # Installs all dependencies in a alpine linux container and runs the tests
-  - docker build -f test-environment.Dockerfile --build-arg NGINX_VERSION=$NGINX_VERSION .
+  - docker build -f test-$BUILD_DISTRO.Dockerfile --build-arg NGINX_VERSION=$NGINX_VERSION CC=$COMPILER .
