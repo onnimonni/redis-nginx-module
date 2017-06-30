@@ -1,22 +1,20 @@
-FROM alpine:3.6
+FROM debian:stretch
+MAINTAINER Onni Hakala - onni@keksi.io
 
+# Install base utils
 RUN \
-	# Install redis and buildtools
-	apk add --update \
-		redis \
-		perl \
-		build-base \
-        curl \
-        gd-dev \
-        geoip-dev \
-        libxslt-dev \
-        linux-headers \
-        make \
-        perl-dev \
-        readline-dev \
-        zlib-dev \
-        pcre-dev \
-        wget > /tmp/apk-install.log 2>&1 || (cat /tmp/apk-install.log && exit 1)
+    apt-get update && \
+    apt-get -y install --no-install-recommends \
+    	build-essential \
+    	libreadline-dev \
+    	libncurses5-dev \
+    	libpcre3-dev \
+    	libgeoip-dev \
+    	zlib1g-dev \
+    	ca-certificates \
+    	wget \
+    	clang \
+    	redis-server > /tmp/apt-install.log 2>&1 || (cat /tmp/apt-install.log && exit 1)
 
 # Install CPAN configuration so we don't get interactive installer
 RUN echo "\n" | cpan > /tmp/cpan-init.log 2>&1 || (cat /tmp/cpan-init.log && exit 1)
@@ -27,7 +25,6 @@ RUN cpan -T Redis local::lib Test::More > /tmp/cpan-build.log 2>&1 || (cat /tmp/
 RUN mkdir -p /build
 WORKDIR /build
 
-# Version for which to test against
 ARG NGINX_VERSION=1.11.2
 
 # Download nginx
@@ -40,7 +37,7 @@ RUN echo "Installing nginx version: ${NGINX_VERSION}" \
 # Copy module files to build directory
 ADD . /build/
 
-# Allow changing the compiler
+# Allow changing between gcc and clang
 ARG CC=gcc
 
 # Build nginx
@@ -54,6 +51,9 @@ RUN cd nginx \
 
     # Create the dir for logs
     && mkdir -p /etc/nginx/logs
+
+# Use local libraries from test directory
+ENV PERL5LIB="/build/t:$PERL5LIB"
 
 # Run tests
 RUN prove -r t

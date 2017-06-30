@@ -26,4 +26,4 @@ script:
   # 1. Installs all dependencies in a alpine/debian container
   # 2. Builds nginx
   # 3. Runs the provided tests
-  - docker build -f test-$BUILD_DISTRO.Dockerfile --build-arg NGINX_VERSION=$NGINX_VERSION --build-arg CC=$COMPILER .
+  - docker build -f t/misc/test-$BUILD_DISTRO.Dockerfile --build-arg NGINX_VERSION=$NGINX_VERSION --build-arg CC=$COMPILER .
