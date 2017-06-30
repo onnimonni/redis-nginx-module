@@ -22,6 +22,7 @@ Table of Contents
     * [$redis_db](#redis_db)
     * [$redis_auth](#redis_auth)
 * [Installation](#installation)
+* [Compatibility](#compatibility)
 * [Community](#community)
     * [English Mailing List](#english-mailing-list)
     * [Chinese Mailing List](#chinese-mailing-list)
@@ -169,6 +170,30 @@ load_module /path/to/modules/ngx_http_redis_module.so;
 ```
 
 Also, this module is included and enabled by default in the [OpenResty bundle](http://openresty.org).
+
+[Back to TOC](#table-of-contents)
+
+Compatibility
+=============
+
+The following versions of Nginx should work with this module:
+
+* **1.13.x**                      (last tested: 1.13.2)
+* **1.12.x**                      (last tested: 1.12.0)
+* **1.11.x**                      (last tested: 1.11.2)
+* **1.10.x**                      (last tested: 1.10.3)
+* **1.9.x**                       (last tested: 1.9.15)
+* **1.8.x**                       (last tested: 1.8.1)
+* **1.7.x**                       (last tested: 1.7.10)
+* **1.6.x**                       (last tested: 1.6.3)
+* **1.5.x**
+* **1.4.x**                       (last tested: 1.4.7)
+* **1.3.x**
+* **1.2.x**                       (last tested: 1.2.9)
+* **1.1.x**
+* **1.0.x**                       (last tested: 1.0.15
+
+If you find that any particular version of Nginx does not work with this module, please consider [reporting a bug](#report-bugs).
 
 [Back to TOC](#table-of-contents)
 
