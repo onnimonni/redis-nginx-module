@@ -19,7 +19,7 @@ RUN \
         pcre-dev \
         wget > /tmp/apk-install.log 2>&1 || (cat /tmp/apk-install.log && exit 1)
 
-# Install CPAN configuration so we don't get interactive installer
+# Agree to cpan automatically so we don't get interactive installer
 RUN echo "\n" | cpan > /tmp/cpan-init.log 2>&1 || (cat /tmp/cpan-init.log && exit 1)
 
 # Install needed perl modules
@@ -28,7 +28,7 @@ RUN cpan -T Redis local::lib Test::More > /tmp/cpan-build.log 2>&1 || (cat /tmp/
 RUN mkdir -p /build
 WORKDIR /build
 
-# Version for which to test against
+# Downloads this version of nginx source code
 ARG NGINX_VERSION=1.11.2
 
 # Download nginx
