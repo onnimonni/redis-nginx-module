@@ -32,7 +32,6 @@ RUN \
 	&& cd /build \
 
 	# Download  nginx
-	&& echo wget "http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz" \
     && wget "http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz" \
     && tar -xzvf nginx-$NGINX_VERSION.tar.gz \
     && mv nginx-$NGINX_VERSION nginx \

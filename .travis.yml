@@ -1,0 +1,41 @@
+# Use container based faster infra
+sudo: false
+
+# Perl is the main language for the tests
+language: perl
+
+# Test with multiple Nginx versions
+# Source: http://nginx.org/en/download.html
+env:
+  - NGINX_VERSION=1.13.2
+  - NGINX_VERSION=1.13.0
+  - NGINX_VERSION=1.12.0 
+  - NGINX_VERSION=1.10.3
+
+before_script:
+  # Install needed perl libraries
+  - cpan install Redis local::lib Test::More
+
+  # Install nginx
+  - wget "http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz"
+  - tar -xzvf nginx-$NGINX_VERSION.tar.gz
+  - mv nginx-$NGINX_VERSION nginx
+  - rm nginx-$NGINX_VERSION.tar.gz
+  
+  # Build nginx with this module
+  - cd nginx
+  - ./configure --prefix=/etc/nginx --add-module=$(realpath ..)
+
+  # Use all cores available in the builds with -j${NPROC} flag
+  - readonly NPROC=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || 1)  && \
+    
+    # Build Nginx
+  - make -j${NPROC}
+  - make -j${NPROC} install
+  
+  - cd ..
+
+script:
+
+  # Run tests
+  - prove -r t
