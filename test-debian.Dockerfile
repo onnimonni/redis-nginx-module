@@ -55,5 +55,4 @@ RUN cd nginx \
 ENV PERL5LIB="/build/t:$PERL5LIB"
 
 # Run tests
-RUN \
-	prove -r t
+RUN prove -r t
