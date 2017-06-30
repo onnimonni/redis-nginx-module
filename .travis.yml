@@ -55,5 +55,6 @@ script:
   # 3. Runs the provided tests
   - docker build -t ngx-redis-test:$BUILD_DISTRO -f t/misc/test-$BUILD_DISTRO.Dockerfile --build-arg NGINX_VERSION=$NGINX_VERSION --build-arg CC=$COMPILER .
 
-after_script:
+# Save image into cache
+before_cache:
   - if [ ! -f ${CACHED_DOCKER_IMAGE_FILE} ]; then docker save ngx-redis-test:$BUILD_DISTRO | gzip > ${CACHED_DOCKER_IMAGE_FILE}; fi
