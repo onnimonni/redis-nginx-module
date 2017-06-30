@@ -1,0 +1,5 @@
+# Ignore logs from tests
+t/*.log
+
+# Ignore OSX garbage
+.DS_Store
