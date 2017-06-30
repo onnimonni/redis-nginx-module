@@ -5,6 +5,8 @@ Name
 
 *This module is not distributed with the Nginx source.* See [the installation instructions](#installation).
 
+[![Build Status](https://travis-ci.org/onnimonni/redis-nginx-module.svg?branch=master)](https://travis-ci.org/onnimonni/redis-nginx-module)
+
 Table of Contents
 =================
 
@@ -354,10 +356,10 @@ To run it on your side:
  $ PATH=/path/to/your/compiled-nginx-with-redis-module:$PATH prove -r t
 ```
 
-You can also use the provided Dockerfile to run tests in a docker container:
+You can also use the included `Makefile` to run tests in a docker containers:
 
 ```bash
-$ docker build -f test-environment.Dockerfile -t openresty/redis-nginx-module-test .
+$ make test
 ```
 
 **Note:** The first installation takes quite some time (5-10min).
