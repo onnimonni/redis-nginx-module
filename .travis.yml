@@ -1,6 +1,8 @@
 # Use docker to run the tests
 sudo: required
 
+language: c
+
 services:
   - docker
 
@@ -22,4 +24,4 @@ env:
 
 script:
   # Installs all dependencies in a alpine linux container and runs the tests
-  - docker build -f test-$BUILD_DISTRO.Dockerfile --build-arg NGINX_VERSION=$NGINX_VERSION CC=$COMPILER .
+  - docker build -f test-$BUILD_DISTRO.Dockerfile --build-arg NGINX_VERSION=$NGINX_VERSION --build-arg CC=$COMPILER .
