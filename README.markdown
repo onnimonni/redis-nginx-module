@@ -17,6 +17,12 @@ Table of Contents
 * [Description](#description)
 * [Directives](#directives)
     * [redis_pass](#redis_pass)
+    * [redis_bind](#redis_bind)
+    * [redis_connect_timeout](#redis_connect_timeout)
+    * [redis_read_timeout](#redis_read_timeout)
+    * [redis_send_timeout](#redis_send_timeout)
+    * [redis_buffer_size](#redis_buffer_size)
+    * [redis_next_upstream](#redis_next_upstream)
 * [Variables](#variables)
     * [$redis_key](#redis_key)
     * [$redis_db](#redis_db)
@@ -100,9 +106,7 @@ Directives
 ==========================
 
 redis_pass
------------
-**syntax:** *redis_pass &lt;upstream_name&gt;*
-
+----------
 **syntax:** *redis_pass &lt;host&gt;:&lt;port&gt;*
 
 **default:** *no*
@@ -111,7 +115,77 @@ redis_pass
 
 **phase:** *content*
 
-Specify the Redis server backend. 
+Specify the Redis server backend.
+
+redis_bind
+----------
+**syntax:** *redis_bind &lt;addr&gt;*
+
+**default:**  *none*
+
+**context:**  **http, server, location**
+
+Use the following IP address as the source address for redis connections.
+
+redis_connect_timeout
+---------------------
+**syntax:** *redis_connect_timeout &lt;time&gt;*
+
+**default:**  *60000*
+
+**context:**  **http, server, location**
+
+The timeout for connecting to redis, in milliseconds.
+
+redis_read_timeout
+------------------
+**syntax:** *redis_read_timeout &lt;time&gt;*
+
+**default:**  *60000*
+
+**context:**  **http, server, location**
+
+The timeout for reading from redis, in milliseconds.
+
+redis_send_timeout
+------------------
+**syntax:** *redis_send_timeout &lt;time&gt;*
+
+**default:**  *60000*
+
+**context:**  **http, server, location**
+
+The timeout for sending to redis, in milliseconds.
+
+redis_buffer_size
+-----------------
+**syntax:** *redis_buffer_size &lt;size&gt;*
+
+**default:**  *see getpagesize(2)*
+
+**context:**  **http, server, location**
+
+The recv/send buffer size, in bytes.
+
+redis_next_upstream
+-------------------
+**syntax:** *redis_next_upstream &lt;error&gt; &lt;timeout&gt; &lt;invalid_response&gt; &lt;not_found&gt; &lt;off&gt;*
+
+**default:**  *error timeout*
+
+**context:**  **http, server, location**
+
+Which failure conditions should cause the request to be forwarded to another upstream server? Applies only when the value in redis_pass is an upstream with two or more servers.
+
+redis_gzip_flag
+---------------------
+**syntax:** *redis_gzip_flag &lt;number&gt;*
+
+**default:**  *unset*
+
+**context:**  **location**
+
+Reimplementation of memcached_gzip_flag, see https://forum.nginx.org/read.php?29,34332,34463 for details.
 
 [Back to TOC](#table-of-contents)
 
