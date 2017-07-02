@@ -38,10 +38,10 @@ before_script:
 script:
   # Build image with nginx and tests included
   # Use travis_retry to avoid errors from network timeouts
-  - travis_retry docker build -t ngx-redis-test:$BUILD_DISTRO -f t/misc/test-alpine.Dockerfile --build-arg NGINX_VERSION=1.9.15 --build-arg CC=$COMPILER .
+  - travis_retry docker build -t ngx-redis-test:$BUILD_DISTRO -f t/misc/test-$BUILD_DISTRO.Dockerfile --build-arg NGINX_VERSION=1.9.15 --build-arg CC=$COMPILER .
 
   # Start services for the tests
   - docker-compose -f t/misc/docker-compose-services.yml up -d
-  
+
   # Run the tests
   - docker run -it --rm --network="container:ngx_redis_server" ngx-redis-test:$BUILD_DISTRO sh -c "nginx -v && prove -r t"
