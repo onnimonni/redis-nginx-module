@@ -32,12 +32,16 @@ env:
     - NGINX_VERSION=1.11.13 BUILD_DISTRO=debian COMPILER=clang
     - NGINX_VERSION=1.12.0  BUILD_DISTRO=debian COMPILER=clang
     - NGINX_VERSION=1.13.2  BUILD_DISTRO=debian COMPILER=clang
+before_script:
+  - docker-compose -v
 
 script:
-  # 1. Installs all dependencies in a alpine/debian container
-  # 2. Builds nginx
-  # 3. Runs the provided tests
-  # - Use travis_retry to avoid errors from network timeouts
-  - travis_retry docker-compose build --build-arg NGINX_VERSION=1.13.0 --build-arg CC=gcc nginx-$BUILD_DISTRO
-  - docker-compose up -d redis redis-auth-enabled
-  - docker-compose run --rm nginx-$BUILD_DISTRO sh -c "nginx -v && prove -r t"
+  # Build image with nginx and tests included
+  # Use travis_retry to avoid errors from network timeouts
+  - travis_retry docker build -t ngx-redis-test:$BUILD_DISTRO -f t/misc/test-$BUILD_DISTRO.Dockerfile --build-arg NGINX_VERSION=1.9.15 --build-arg CC=$COMPILER .
+
+  # Start services for the tests
+  - docker-compose -f t/misc/docker-compose-services.yml up -d
+
+  # Run the tests
+  - docker run -it --rm --network="container:ngx_redis_server" ngx-redis-test:$BUILD_DISTRO sh -c "nginx -v && prove -r t"

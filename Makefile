@@ -1,28 +1,29 @@
 test: start-services test-alpine test-debian-gcc test-debian-clang stop-services
 	
 start-services:
-	docker-compose up -d redis redis-auth-enabled
+	docker-compose -f t/misc/docker-compose-services.yml up -d
 
 stop-services:
-	docker-compose stop; docker-compose rm -f
+	docker-compose -f t/misc/docker-compose-services.yml stop
+	docker-compose -f t/misc/docker-compose-services.yml rm -f
 
 test-alpine:
 	# Installs all dependencies, builds nginx with redis module and runs tests
 	# in alpine container
-	docker-compose build --build-arg NGINX_VERSION=1.13.0 --build-arg CC=gcc nginx-alpine
-	docker-compose run --rm nginx-alpine sh -c "nginx -v && prove -r t"
+	docker build -t ngx-redis-test:alpine -f t/misc/test-alpine.Dockerfile --build-arg NGINX_VERSION=1.9.15 .
+	docker run -it --rm --network="container:ngx_redis_server" ngx-redis-test:alpine sh -c "nginx -v && prove -r t"
 
 test-debian-gcc:
 	# Installs all dependencies, builds nginx with redis module and runs tests
 	# in debian container
-	docker-compose build --build-arg NGINX_VERSION=1.13.0 --build-arg CC=gcc nginx-debian
-	docker-compose run --rm nginx-alpine sh -c "nginx -v && prove -r t"
+	docker build -t ngx-redis-test:debian-gcc -f t/misc/test-debian.Dockerfile --build-arg NGINX_VERSION=1.9.15 .
+	docker run -it --rm --network="container:ngx_redis_server" ngx-redis-test:debian-gcc sh -c "nginx -v && prove -r t"
 
 test-debian-clang:
 	# Installs all dependencies, builds nginx with redis module and runs tests
 	# in debian container
-	docker-compose build --build-arg NGINX_VERSION=1.13.0 --build-arg CC=clang nginx-debian
-	docker-compose run --rm nginx-alpine sh -c "nginx -v && prove -r t"
+	docker build -t ngx-redis-test:debian-clang -f t/misc/test-debian.Dockerfile --build-arg NGINX_VERSION=1.9.15 .
+	docker run -it --rm --network="container:ngx_redis_server" ngx-redis-test:debian-clang sh -c "nginx -v && prove -r t"
 
 # This uses debian because glibc has longer support for nginx than musl
 # Alpine is supported from 1.6.3 and forward
