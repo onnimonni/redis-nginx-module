@@ -1,3 +1,22 @@
+Changes with ngx_http_redis 0.3.9                               02 Jul 2017
+    *) Bugfix: it is now possible to build this with Nginx 1.11.6 and newer
+       Fixes breaking api change in ngx_http_upstream_srv_conf_t
+       Thanks to Onni Hakala (onnimonni).
+
+    *) Feature: You can now use $redis_auth variable to send AUTH request
+       and use password protected redis instances.
+       Thanks to Wang Yongke (Yongke).
+
+Changes with ngx_http_redis 0.3.8                               21 Feb 2016
+
+    *) Bugfix: it is impossible to compile the ngx_http_redis_module
+       without http_gzip module or with --without-http_gzip_module
+       option.
+       Thanks to Yichun Zhang (agentzh).
+ 
+    *) Feature: it's possible to compile as dynamic module now, this
+       feature has been introduced in nginx 1.9.11.
+
 Changes with ngx_http_redis 0.3.8                               21 Feb 2016
 
     *) Bugfix: it is impossible to compile the ngx_http_redis_module
