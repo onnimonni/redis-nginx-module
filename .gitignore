@@ -1,0 +1,8 @@
+# Ignore logs from tests
+t/*.log
+
+# Ignore redis dumps from test runs
+t/dump.rdb
+
+# Ignore OSX garbage
+.DS_Store
