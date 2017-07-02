@@ -20,7 +20,7 @@ RUN \
 RUN echo "\n" | cpan > /tmp/cpan-init.log 2>&1 || (cat /tmp/cpan-init.log && exit 1)
 
 # Install needed perl modules
-RUN cpan -T Redis local::lib Test::More > /tmp/cpan-build.log 2>&1 || (cat /tmp/cpan-build.log && exit 1)
+RUN cpan -T Redis local::lib Test::More Test::Nginx > /tmp/cpan-build.log 2>&1 || (cat /tmp/cpan-build.log && exit 1)
 
 RUN mkdir -p /build
 WORKDIR /build
@@ -54,7 +54,9 @@ RUN cd nginx \
     && mkdir -p /etc/nginx/logs
 
 # Use local libraries from test directory
-ENV PERL5LIB="/build/t:$PERL5LIB"
+# Add newly built nginx into path
+ENV PERL5LIB="/build/t:$PERL5LIB" \
+    PATH="/build/nginx/objs:$PATH"
 
 # Run tests
 RUN prove -r t

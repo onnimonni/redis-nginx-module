@@ -1,8 +1,10 @@
 # Ignore logs from tests
 t/*.log
-
 # Ignore redis dumps from test runs
 t/dump.rdb
+
+# Ignore things from openresty Test::Nginx
+t/servroot
 
 # Ignore OSX garbage
 .DS_Store

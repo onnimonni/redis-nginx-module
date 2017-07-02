@@ -1,4 +1,5 @@
 requires 'Redis';
+requires 'Test::Nginx';
 requires 'Test::More';
 requires 'local::lib';
 
