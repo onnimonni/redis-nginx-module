@@ -4,7 +4,7 @@ services:
   nginx-alpine:
     build:
       context: .
-      dockerfile: ./t/misc/test-alpine.dockerfile
+      dockerfile: t/misc/test-alpine.dockerfile
     volumes:
       - ./t:/build/t:rw,cached
     environment:
@@ -19,7 +19,7 @@ services:
   nginx-debian:
     build:
       context: .
-      dockerfile: ./t/misc/test-debian.dockerfile
+      dockerfile: t/misc/test-debian.dockerfile
     environment:
       TEST_NGINX_REDIS_HOST: redis
       TEST_NGINX_REDIS_PORT: 6379

@@ -32,6 +32,8 @@ env:
     - NGINX_VERSION=1.11.13 BUILD_DISTRO=debian COMPILER=clang
     - NGINX_VERSION=1.12.0  BUILD_DISTRO=debian COMPILER=clang
     - NGINX_VERSION=1.13.2  BUILD_DISTRO=debian COMPILER=clang
+before_script:
+  - docker-compose -v
 
 script:
   # 1. Installs all dependencies in a alpine/debian container
