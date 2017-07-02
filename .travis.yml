@@ -1,0 +1,41 @@
+# Use docker to run the tests
+sudo: required
+
+language: c
+
+services:
+  - docker
+
+env:
+
+  matrix:
+    # Test with multiple Nginx versions
+    # Source: http://nginx.org/en/download.html
+
+    # Alpine uses musl c library
+    - NGINX_VERSION=1.9.15  BUILD_DISTRO=alpine COMPILER=gcc
+    - NGINX_VERSION=1.10.3  BUILD_DISTRO=alpine COMPILER=gcc
+    - NGINX_VERSION=1.11.13 BUILD_DISTRO=alpine COMPILER=gcc
+    - NGINX_VERSION=1.12.0  BUILD_DISTRO=alpine COMPILER=gcc
+    - NGINX_VERSION=1.13.2  BUILD_DISTRO=alpine COMPILER=gcc
+
+    # Debian uses glibc c library run with GNU C compiler
+    - NGINX_VERSION=1.9.15  BUILD_DISTRO=debian COMPILER=gcc
+    - NGINX_VERSION=1.10.3  BUILD_DISTRO=debian COMPILER=gcc
+    - NGINX_VERSION=1.11.13 BUILD_DISTRO=debian COMPILER=gcc
+    - NGINX_VERSION=1.12.0  BUILD_DISTRO=debian COMPILER=gcc
+    - NGINX_VERSION=1.13.2  BUILD_DISTRO=debian COMPILER=gcc
+    
+    # Run also with clang compiler
+    - NGINX_VERSION=1.9.15  BUILD_DISTRO=debian COMPILER=clang
+    - NGINX_VERSION=1.10.3  BUILD_DISTRO=debian COMPILER=clang
+    - NGINX_VERSION=1.11.13 BUILD_DISTRO=debian COMPILER=clang
+    - NGINX_VERSION=1.12.0  BUILD_DISTRO=debian COMPILER=clang
+    - NGINX_VERSION=1.13.2  BUILD_DISTRO=debian COMPILER=clang
+
+script:
+  # 1. Installs all dependencies in a alpine/debian container
+  # 2. Builds nginx
+  # 3. Runs the provided tests
+  # - Use travis_retry to avoid errors from network timeouts
+  - travis_retry docker build -t ngx-redis-test:$BUILD_DISTRO -f t/misc/test-$BUILD_DISTRO.Dockerfile --build-arg NGINX_VERSION=$NGINX_VERSION --build-arg CC=$COMPILER .
