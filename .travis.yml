@@ -38,4 +38,6 @@ script:
   # 2. Builds nginx
   # 3. Runs the provided tests
   # - Use travis_retry to avoid errors from network timeouts
-  - travis_retry docker build -t ngx-redis-test:$BUILD_DISTRO -f t/misc/test-$BUILD_DISTRO.Dockerfile --build-arg NGINX_VERSION=$NGINX_VERSION --build-arg CC=$COMPILER .
+  - travis_retry docker-compose build --build-arg NGINX_VERSION=1.13.0 --build-arg CC=gcc nginx-$BUILD_DISTRO
+  - docker-compose up -d redis redis-auth-enabled
+  - docker-compose run --rm nginx-$BUILD_DISTRO sh -c "nginx -v && prove -r t"

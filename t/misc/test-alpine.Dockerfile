@@ -41,14 +41,14 @@ RUN echo "Installing nginx version: ${NGINX_VERSION}" \
 # Copy module files to build directory
 ADD . /build/
 
-# Allow changing the compiler
+# Allow changing between gcc and clang
 ARG CC=gcc
 
 # Build nginx
 RUN cd nginx \
     && readonly NPROC=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || 1)  \
     && echo "Using up to $NPROC threads for make" \
-    && ./configure --prefix=/etc/nginx --add-module=/build/ \
+    && ./configure --prefix=/etc/nginx --add-module=/build \
     && make -j${NPROC} > /tmp/make.log 2>&1 || (cat /tmp/make.log && exit 1) \
     && make -j${NPROC} install > /tmp/make.log 2>&1 || (cat /tmp/make.log && exit 1) \
     && cd .. \
@@ -57,8 +57,6 @@ RUN cd nginx \
     && mkdir -p /etc/nginx/logs
 
 # Use local libraries from test directory
+# Add newly built nginx into path
 ENV PERL5LIB="/build/t:$PERL5LIB" \
     PATH="/build/nginx/objs:$PATH"
-
-# Run tests
-RUN prove -r t

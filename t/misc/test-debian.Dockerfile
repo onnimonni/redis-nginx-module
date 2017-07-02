@@ -45,7 +45,7 @@ ARG CC=gcc
 RUN cd nginx \
     && readonly NPROC=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || 1)  \
     && echo "Using up to $NPROC threads for make" \
-    && ./configure --prefix=/etc/nginx --add-module=/build/ \
+    && ./configure --prefix=/etc/nginx --add-module=/build \
     && make -j${NPROC} > /tmp/make.log 2>&1 || (cat /tmp/make.log && exit 1) \
     && make -j${NPROC} install > /tmp/make.log 2>&1 || (cat /tmp/make.log && exit 1) \
     && cd .. \
@@ -57,6 +57,3 @@ RUN cd nginx \
 # Add newly built nginx into path
 ENV PERL5LIB="/build/t:$PERL5LIB" \
     PATH="/build/nginx/objs:$PATH"
-
-# Run tests
-RUN prove -r t
