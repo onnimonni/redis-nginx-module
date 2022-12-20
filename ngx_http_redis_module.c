@@ -604,7 +604,7 @@ found:
             ngx_str_set(&h->key, "Content-Encoding");
             ngx_str_set(&h->value, "gzip");
             h->lowcase_key = (u_char*) "content-encoding";
-#if (NGX_HTTP_GZIP)
+#if (NGX_HTTP_GZIP && nginx_version < 1023000)
             u->headers_in.content_encoding = h;
 #endif
         }
